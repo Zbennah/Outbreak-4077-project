@@ -1,95 +1,101 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-public class EnemyAi : MonoBehaviour
+public class EnemyAI : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-
-    public NavMeshAgent agent;
     public Transform player;
-    public LayerMask whatIsGround, whatIsPlayer;
+    private NavMeshAgent zom1;
 
-    //idle walking pre aggro
-    public Vector3 walkPoint;
-    bool walkPointSet;
-    public float walkPointRange;
+    public float sightRange = 10f;
+    public float attackRange = 2f;
+    public float attackCooldown = 1.5f;
+    public float damage = 10f;
+    public float patrolRadius = 10f;
 
-    //Attacking the player
-    public float timeBetweenAttacks;
-    bool alreadyAttacked;
 
-    //states for enemy
-    public float sightRange, attackRange;
-    public bool playerInSightRange, playerInAttackRange;
+    public float maxHealth = 50f;
+    private float currentHealth;
 
-    private void Awake()
+    private bool playerInSightRange;
+    private bool playerInAttackRange;
+    private bool alreadyAttacked;
+
+    private Vector3 patrolPoint;
+    private bool patrolPointSet;
+
+    void Start()
     {
-        player = GameObject.Find("PlayerObj").transform;
-        agent = GetComponent<NavMeshAgent>(); 
+        zom1 = GetComponent<NavMeshAgent>();
+        currentHealth = maxHealth;
+
+        if (player == null)
+            player = GameObject.FindGameObjectWithTag("Player")?.transform;
     }
 
-    private void Update()
+    void Update()
     {
-        //check for sight and attack range
-        playerInSightRange = Physics.CheckSphere(transform.position, sightRange, whatIsPlayer);
-        playerInAttackRange = Physics.CheckSphere(transform.position, attackRange, whatIsPlayer);
+        if (player == null) return;
 
-        if (!playerInSightRange && !playerInAttackRange) Patrolling();
+        // Check distances
+        float distance = Vector3.Distance(transform.position, player.position);
+        playerInSightRange = distance <= sightRange;
+        playerInAttackRange = distance <= attackRange;
+
+        if (!playerInSightRange && !playerInAttackRange) Patrol();
         if (playerInSightRange && !playerInAttackRange) ChasePlayer();
-        if (playerInSightRange && playerInAttackRange) AttackPlayer();
+        if (playerInAttackRange && playerInSightRange) AttackPlayer();
     }
 
-    private void Patrolling()
+    void Patrol()
     {
-        if (!walkPointSet) SearchWalkingPoint();
+        if (!patrolPointSet)
+            SearchPatrolPoint();
 
-        if (walkPointSet)
-            agent.SetDestination(walkPoint);
+        if (patrolPointSet)
+            zom1.SetDestination(patrolPoint);
 
-        Vector3 distanceToWalkPoint = transform.position - walkPoint;
+        Vector3 distanceToPoint = transform.position - patrolPoint;
 
-        //walkpoint reached
-        if(distanceToWalkPoint.magnitude < 1f)
-            walkPointSet = false;
+      
+        if (distanceToPoint.magnitude < 1f)
+            patrolPointSet = false;
     }
 
-    private void SearchWalkingPoint()
+    void SearchPatrolPoint()
     {
-        //calculating a random point in range
-        float randomZ = Random.Range(-walkPointRange, walkPointRange);
-        float randomX= Random.Range(-walkPointRange, walkPointRange);
+ 
+        float randomZ = Random.Range(-patrolRadius, patrolRadius);
+        float randomX = Random.Range(-patrolRadius, patrolRadius);
 
-        walkPoint = new Vector3(transform.position.x + randomX, transform.position.y, transform.position.z + randomZ);
+        Vector3 randomPoint = new Vector3(transform.position.x + randomX, transform.position.y, transform.position.z + randomZ);
 
-        if (Physics.Raycast(walkPoint, -transform.up, 2f, whatIsGround))
-            walkPointSet = true;
-    }
-
-    private void ChasePlayer()
-    {
-        agent.SetDestination(player.position);
-    }
-
-    private void AttackPlayer()
-    {
-        //making sure thenemy doesnt move when attacking
-        agent.SetDestination(transform.position);
-
-        transform.LookAt(player);
-
-        if (!alreadyAttacked)
+        NavMeshHit hit;
+        if (NavMesh.SamplePosition(randomPoint, out hit, 2f, NavMesh.AllAreas))
         {
-            //Attack code
-            Rigidbody rb = GetComponent<Rigidbody>();
-            alreadyAttacked = true;
-            Invoke(nameof(ResetAttack), timeBetweenAttacks);
+            patrolPoint = hit.position;
+            patrolPointSet = true;
         }
     }
 
-    private void ResetAttack()
+    void ChasePlayer()
+    {
+        zom1.SetDestination(player.position);
+    }
+
+    void AttackPlayer()
+    {
+  
+        zom1.SetDestination(transform.position);
+
+
+        Vector3 lookDir = (player.position - transform.position).normalized;
+        lookDir.y = 0;
+        transform.rotation = Quaternion.LookRotation(lookDir);
+
+    }
+
+    void ResetAttack()
     {
         alreadyAttacked = false;
     }
-
-
 }
