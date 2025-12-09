@@ -9,9 +9,8 @@ public class EnemyAI : MonoBehaviour
     public float sightRange = 10f;
     public float attackRange = 2f;
     public float attackCooldown = 1.5f;
-    public float damage = 10f;
+    public int damage = 10; // damage dealt to player
     public float patrolRadius = 10f;
-
 
     public float maxHealth = 50f;
     private float currentHealth;
@@ -23,6 +22,8 @@ public class EnemyAI : MonoBehaviour
     private Vector3 patrolPoint;
     private bool patrolPointSet;
 
+    private PlayerHealth playerHealth;   // <-- reference to your player health script
+
     void Start()
     {
         zom1 = GetComponent<NavMeshAgent>();
@@ -30,13 +31,23 @@ public class EnemyAI : MonoBehaviour
 
         if (player == null)
             player = GameObject.FindGameObjectWithTag("Player")?.transform;
+
+        if (player != null)
+            playerHealth = player.GetComponent<PlayerHealth>();
+
+        // FIX: smoother collisions between enemies
+        zom1.radius = 0.55f; // smaller collision bubble
+        zom1.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
+        zom1.avoidancePriority = Random.Range(30, 70); // spreads movement differences
+        zom1.autoBraking = false;
     }
+
+
 
     void Update()
     {
         if (player == null) return;
 
-        // Check distances
         float distance = Vector3.Distance(transform.position, player.position);
         playerInSightRange = distance <= sightRange;
         playerInAttackRange = distance <= attackRange;
@@ -56,14 +67,12 @@ public class EnemyAI : MonoBehaviour
 
         Vector3 distanceToPoint = transform.position - patrolPoint;
 
-      
         if (distanceToPoint.magnitude < 1f)
             patrolPointSet = false;
     }
 
     void SearchPatrolPoint()
     {
- 
         float randomZ = Random.Range(-patrolRadius, patrolRadius);
         float randomX = Random.Range(-patrolRadius, patrolRadius);
 
@@ -84,14 +93,23 @@ public class EnemyAI : MonoBehaviour
 
     void AttackPlayer()
     {
-  
-        zom1.SetDestination(transform.position);
-
+        zom1.SetDestination(transform.position); // stop moving
 
         Vector3 lookDir = (player.position - transform.position).normalized;
         lookDir.y = 0;
         transform.rotation = Quaternion.LookRotation(lookDir);
 
+        // Attack logic
+        if (!alreadyAttacked)
+        {
+            if (playerHealth != null)
+            {
+                playerHealth.TakeDamage(damage);   // <-- THIS DEALS DAMAGE
+            }
+
+            alreadyAttacked = true;
+            Invoke(nameof(ResetAttack), attackCooldown);
+        }
     }
 
     void ResetAttack()
