@@ -4,11 +4,11 @@ public class PlayerShoot : MonoBehaviour
 {
     public GameObject bulletPrefab;
     public Transform bulletSpawnPoint;
-    public float bulletSpeed = 15f;
+    public float bulletSpeed = 15f; 
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(1)) // Right click
+        if (Input.GetMouseButtonDown(0))
         {
             Shoot();
         }
@@ -16,9 +16,23 @@ public class PlayerShoot : MonoBehaviour
 
     void Shoot()
     {
-        GameObject bullet = Instantiate(bulletPrefab, bulletSpawnPoint.position, bulletSpawnPoint.rotation);
+        
+        Vector3 spawnPos = bulletSpawnPoint.position + bulletSpawnPoint.forward * 0.5f;
+        GameObject bullet = Instantiate(bulletPrefab, spawnPos, bulletSpawnPoint.rotation);
 
-        Rigidbody rb = bullet.GetComponent<Rigidbody>();
-        rb.velocity = bulletSpawnPoint.forward * bulletSpeed;
+        
+        Collider bulletCollider = bullet.GetComponent<Collider>();
+        Collider playerCollider = GetComponent<Collider>();
+        if (bulletCollider && playerCollider)
+        {
+            Physics.IgnoreCollision(bulletCollider, playerCollider);
+        }
+
+        
+        Bullet bulletScript = bullet.GetComponent<Bullet>();
+        if (bulletScript != null && bulletScript.TryGetComponent<Rigidbody>(out Rigidbody rb))
+        {
+            rb.velocity = bulletSpawnPoint.forward * bulletSpeed;
+        }
     }
 }

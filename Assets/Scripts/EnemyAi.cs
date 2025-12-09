@@ -9,7 +9,7 @@ public class EnemyAI : MonoBehaviour
     public float sightRange = 10f;
     public float attackRange = 2f;
     public float attackCooldown = 1.5f;
-    public int damage = 10; // damage dealt to player
+    public int damage = 10; 
     public float patrolRadius = 10f;
 
     public float maxHealth = 50f;
@@ -22,7 +22,7 @@ public class EnemyAI : MonoBehaviour
     private Vector3 patrolPoint;
     private bool patrolPointSet;
 
-    private PlayerHealth playerHealth;   // <-- reference to your player health script
+    private PlayerHealth playerHealth;   
 
     void Start()
     {
@@ -35,11 +35,9 @@ public class EnemyAI : MonoBehaviour
         if (player != null)
             playerHealth = player.GetComponent<PlayerHealth>();
 
-        // FIX: smoother collisions between enemies
-        zom1.radius = 0.55f; // smaller collision bubble
+        zom1.radius = 0.55f; 
         zom1.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
-        zom1.avoidancePriority = Random.Range(30, 70); // spreads movement differences
-        zom1.autoBraking = false;
+        zom1.avoidancePriority = Random.Range(30, 70); 
     }
 
 
@@ -93,18 +91,17 @@ public class EnemyAI : MonoBehaviour
 
     void AttackPlayer()
     {
-        zom1.SetDestination(transform.position); // stop moving
+        zom1.SetDestination(transform.position); 
 
         Vector3 lookDir = (player.position - transform.position).normalized;
         lookDir.y = 0;
         transform.rotation = Quaternion.LookRotation(lookDir);
 
-        // Attack logic
         if (!alreadyAttacked)
         {
             if (playerHealth != null)
             {
-                playerHealth.TakeDamage(damage);   // <-- THIS DEALS DAMAGE
+                playerHealth.TakeDamage(damage);  
             }
 
             alreadyAttacked = true;

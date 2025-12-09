@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using System.Collections;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -10,15 +12,28 @@ public class PlayerHealth : MonoBehaviour
     public int barWidth = 150;
     public int barHeight = 20;
 
+    [Header("Respawn Settings")]
+    public float respawnDelay = 2f;
+
+    [Header("Audio Settings")]
+    public AudioClip damageSound;  
+    private AudioSource audioSource;
+
     void Start()
     {
         currentHealth = maxHealth;
+        audioSource = GetComponent<AudioSource>();
+        audioSource.playOnAwake = false; 
     }
 
-    // --- Health Functions ---
     public void TakeDamage(int amount)
     {
         currentHealth -= amount;
+
+        if (damageSound != null)
+        {
+            audioSource.PlayOneShot(damageSound);
+        }
 
         if (currentHealth <= 0)
         {
@@ -38,7 +53,14 @@ public class PlayerHealth : MonoBehaviour
     void Die()
     {
         Debug.Log("Player Died");
-        // Your death logic goes here
+
+        StartCoroutine(RespawnAfterDelay());
+    }
+
+    IEnumerator RespawnAfterDelay()
+    {
+        yield return new WaitForSeconds(respawnDelay);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     public int GetCurrentHealth()
@@ -46,23 +68,19 @@ public class PlayerHealth : MonoBehaviour
         return currentHealth;
     }
 
-    // --- OnGUI Health Bar ---
     void OnGUI()
     {
         float healthPercent = (float)currentHealth / maxHealth;
 
-        // Position in TOP RIGHT
         int x = Screen.width - barWidth - 10;
         int y = 10;
 
-        // Background bar
         GUI.color = Color.black;
         GUI.Box(new Rect(x, y, barWidth, barHeight), GUIContent.none);
 
-        // Green fill bar
         GUI.color = Color.green;
         GUI.Box(new Rect(x, y, barWidth * healthPercent, barHeight), GUIContent.none);
 
-        GUI.color = Color.white; // reset
+        GUI.color = Color.white;
     }
 }
